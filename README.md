@@ -1,4 +1,4 @@
-New prompt example:
+## New prompt example:
 ```
 python run.py -data Data_SIMCLR_balanced -dataset-name custom_grayscale -crop-size 224 --arch resnet34 --epochs 10 -b 128
 ```
