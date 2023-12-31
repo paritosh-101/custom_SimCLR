@@ -10,16 +10,20 @@ model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
                      and callable(models.__dict__[name]))
 
+resnet_model_names = ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
+
 parser = argparse.ArgumentParser(description='PyTorch SimCLR')
 parser.add_argument('-data', metavar='DIR', default='./datasets',
                     help='path to dataset')
 parser.add_argument('-dataset-name', default='stl10',
-                    help='dataset name', choices=['stl10', 'cifar10'])
+                    help='dataset name', choices=['stl10', 'cifar10', 'custom_rgb', 'custom_grayscale'])
+parser.add_argument('-crop-size', type=int, default=32,
+                    help='size for random resized crop (default: 32)')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
                     help='model architecture: ' +
-                         ' | '.join(model_names) +
-                         ' (default: resnet50)')
+                         ' | '.join(resnet_model_names) +
+                         ' (default: resnet18)')
 parser.add_argument('-j', '--workers', default=12, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
@@ -64,7 +68,7 @@ def main():
         args.device = torch.device('cpu')
         args.gpu_index = -1
 
-    dataset = ContrastiveLearningDataset(args.data)
+    dataset = ContrastiveLearningDataset(root_folder=args.data, crop_size=args.crop_size)
 
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
@@ -72,7 +76,10 @@ def main():
         train_dataset, batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last=True)
 
-    model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
+    if args.dataset_name == 'custom_grayscale':
+        model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim, grayscale=True)
+    else:
+        model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim, grayscale=False)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
 
